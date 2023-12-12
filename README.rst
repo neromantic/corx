@@ -39,9 +39,4 @@ The core components of the Barista architecture include:
 
 - **EventListener**: Reacts to specific events by executing custom logic.
 
-- **Saga**: Orchestrates complex workflows by reacting to events and potentially issuing new commands.
-
-License
--------
-
-.. include:: LICENSE.txt
+- **ProcessManager**: Orchestrates complex workflows by reacting to events and potentially issuing new commands.
