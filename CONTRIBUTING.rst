@@ -1,14 +1,14 @@
-Contributing to Barista
+Contributing to corx
 =======================
 
-Thank you for considering contributing to the Barista project! We appreciate your effort to improve our codebase.
+Thank you for considering contributing to the corx project! We appreciate your effort to improve our codebase.
 
 Before you begin, please review our Code of Conduct to ensure a positive and inclusive environment for everyone.
 
 Getting Started
 ---------------
 
-1. Fork the Barista repository on Bitbucket.
+1. Fork the corx repository on Bitbucket.
 2. Clone your forked repository to your local machine: ``git clone https://bitbucket.org/your-username/corx.git``
 3. Create a new branch for your changes: ``git checkout -b feature-name``
 4. Make your changes and commit them:
@@ -23,7 +23,7 @@ Getting Started
 Code Style
 ----------
 
-Follow the established coding style in the Barista project. Adhere to any linters or coding style guides.
+Follow the established coding style in the corx project. Adhere to any linters or coding style guides.
 
 Testing
 -------
@@ -50,6 +50,6 @@ Help and Support
 
 If you need help or have questions, reach out on Bitbucket Discussions or create an issue.
 
-Thank you for contributing to Barista! We value your time and effort.
+Thank you for contributing to corx! We value your time and effort.
 
 Happy coding!
