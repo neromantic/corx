@@ -1,57 +1,16 @@
 import abc
 import asyncio
-import collections
 import enum
-import inspect
-import logging
 import typing
 
-import dotenv
 
 __all__ = [
-    'logger',
     'Singleton',
     'AsyncLoop',
     'UseCases',
     'HasUseCase',
     'Executor',
 ]
-
-__ENV = collections.defaultdict(str, dotenv.dotenv_values(".env"))
-__LOG_LEVEL_MAP = {
-    'CRITICAL': logging.CRITICAL,
-    'ERROR': logging.ERROR,
-    'WARNING': logging.WARNING,
-    'INFO': logging.INFO,
-    'DEBUG': logging.DEBUG,
-    'NOTSET': logging.NOTSET,
-}
-
-logging.basicConfig(
-    format='%(asctime)s.%(msecs)3d - %(name)s - %(levelname)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S',
-    level=__LOG_LEVEL_MAP.get(__ENV.get('LOG_LEVEL'), 'INFO'),
-)
-__LOGGERS = {}
-
-
-def logger():
-    global __LOGGERS
-    frame = inspect.currentframe().f_back.f_back
-    module_name = inspect.getmodule(frame).__name__
-
-    self: typing.Optional[object] = frame.f_locals.get('self', None)
-    if self is not None:
-        self = self.__class__.__name__
-
-    function_name = frame.f_code.co_name
-
-    caller = f'{module_name}.{self or function_name}'
-
-    if caller not in __LOGGERS:
-        __LOGGERS[caller] = logging.getLogger(caller)
-
-    return __LOGGERS[caller]
 
 
 class Singleton(type):
@@ -89,13 +48,11 @@ class AsyncLoop(metaclass=Singleton):
         self._worker_tasks.append(worker_task)
 
     async def _worker(self) -> None:
-        logger().debug(f'Spawn Worker {id(self._loop)}')
         while True:
             process = await self._queue.get()
             try:
                 await process
             except Exception as e:
-                logger().exception(e)
                 self._exceptions.append(e)
             finally:
                 self._queue.task_done()

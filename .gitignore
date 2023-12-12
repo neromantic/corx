@@ -53,6 +53,5 @@ MANIFEST
 venv*/
 .conda*/
 .python-version
-.env
 docs/_build
 docs/api
