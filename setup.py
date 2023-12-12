@@ -11,7 +11,7 @@ from setuptools import setup
 if __name__ == "__main__":
     try:
         setup(
-            version='1.0.0.beta.1',
+            version='1.0.0.beta.2',
             use_scm_version={"version_scheme": "no-guess-dev"},
         )
     except:  # noqa
