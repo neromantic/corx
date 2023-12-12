@@ -10,6 +10,7 @@ from corx.dispatcher import Dispatchable, Dispatcher
 
 __all__ = [
     'Event',
+    'EventType',
     'EventListener',
     'EventExecutor',
     'RuntimeEventStore',
@@ -47,17 +48,9 @@ class AnyEvent(Event, abc.ABC):
 
 
 class EventListener(HasUseCase):
-    def __init__(self):
-        for react in self.reacts():
-            Dispatcher().register(react, type(self))
-
     @staticmethod
     def use_case() -> UseCases:
         return UseCases.Event
-
-    @staticmethod
-    def reacts() -> typing.Tuple[typing.Type[Event]]:
-        return AnyEvent,
 
     @abc.abstractmethod
     async def react(self, event: Event):
@@ -65,6 +58,15 @@ class EventListener(HasUseCase):
 
 
 EventListenerType = typing.TypeVar('EventListenerType', bound=typing.Type[EventListener])
+
+
+def reacts(*events: EventType):
+    def wrap(cls):
+        for react in events:
+            Dispatcher().register(react, cls)
+        return cls
+
+    return wrap
 
 
 class ProcessManager(EventListener, abc.ABC):

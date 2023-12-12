@@ -23,7 +23,7 @@ class CommandFactory(object):
 
     @staticmethod
     def register_command_handler(command: typing.Type[corx.command.Command],
-                                 cb: HandlerClosure) -> corx.command.CommandHandler:
+                                 cb: HandlerClosure) -> None:
         handler_cls = type(
             command.__name__ + 'Handler',
             (corx.command.CommandHandler,),
@@ -33,7 +33,7 @@ class CommandFactory(object):
             }
         )
 
-        return handler_cls()
+        corx.command.handles(command)(handler_cls)
 
 
 class EventFactory(object):

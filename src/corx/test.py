@@ -23,7 +23,7 @@ class UnitTestCase(unittest.TestCase, abc.ABC):
     @classmethod
     def setUpClass(cls):
         cls.dispatcher = corx.dispatcher.Dispatcher()
-        cls._event_store = corx.event.RuntimeEventStore()
+        cls._event_store = corx.event.reacts(corx.event.AnyEvent)(corx.event.RuntimeEventStore)()
 
         cls.dispatcher.propagate_exceptions(True)
 

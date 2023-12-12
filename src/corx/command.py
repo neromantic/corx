@@ -9,6 +9,7 @@ from corx.dispatcher import Dispatchable, Dispatcher
 
 __all__ = [
     'Command',
+    'CommandType',
     'CommandHandler',
     'CommandExecutor'
 ]
@@ -27,25 +28,25 @@ class Command(Dispatchable, abc.ABC):
 CommandType = typing.TypeVar('CommandType', bound=typing.Type[Command])
 
 
-class CommandHandler(typing.Generic[CommandType], HasUseCase, metaclass=Singleton):
-    def __init__(self):
-        Dispatcher().register(self.handles(), type(self))
-
+class CommandHandler(HasUseCase, metaclass=Singleton):
     @staticmethod
     def use_case() -> UseCases:
         return UseCases.Command
 
-    @staticmethod
     @abc.abstractmethod
-    def handles() -> CommandType:
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def handle(self, command: Command) -> typing.Optional[typing.Coroutine]:
+    def handle(self, command: Command):
         raise NotImplementedError
 
 
 CommandHandlerType = typing.TypeVar('CommandHandlerType', bound=typing.Type[CommandHandler])
+
+
+def handles(command: CommandType):
+    def wrap(cls):
+        Dispatcher().register(command, cls)
+        return cls
+
+    return wrap
 
 
 class CommandExecutor(Executor):
