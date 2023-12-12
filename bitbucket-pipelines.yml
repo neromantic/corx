@@ -1,0 +1,11 @@
+image: python:3.9
+
+pipelines:
+  default:
+    - step:
+        name: Lint and Test
+        script:
+          - pip install -e '.[testing]'
+          - mkdir test-results
+          - tox -e lint-ci
+          - tox -e test
