@@ -18,11 +18,10 @@ EVENT_BUILTINS = [
 
 
 class UnitTestCase(unittest.TestCase, abc.ABC):
-    dispatcher: corx.dispatcher.Dispatcher
 
     @classmethod
     def setUpClass(cls):
-        cls.dispatcher = corx.dispatcher.Dispatcher()
+        cls.dispatcher = corx.dispatcher.get_dispatcher()
         cls._event_store = corx.event.reacts(corx.event.AnyEvent)(corx.event.RuntimeEventStore)()
 
         cls.dispatcher.propagate_exceptions(True)

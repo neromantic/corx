@@ -4,9 +4,7 @@ import datetime
 import typing
 import uuid
 
-from corx.aggregate import Aggregate
-from corx.base import UseCases, HasUseCase, Singleton, Executor
-from corx.dispatcher import Dispatchable, Dispatcher
+from corx.dispatcher import Dispatchable, get_dispatcher, Executor
 
 __all__ = [
     'Event',
@@ -18,9 +16,10 @@ __all__ = [
     'AnyEvent',
 ]
 
+_T = typing.TypeVar('_T')
 
 @dataclasses.dataclass
-class Event(Dispatchable, abc.ABC):
+class Event(typing.Generic[_T], Dispatchable, abc.ABC):
     _versions = {}
 
     timestamp: float = dataclasses.field(init=False, default_factory=datetime.datetime.now().timestamp)
@@ -31,12 +30,8 @@ class Event(Dispatchable, abc.ABC):
         self.version = self._versions.setdefault(type(self), 0) + 1
         self._versions[type(self)] = self.version
 
-    @staticmethod
-    def use_case() -> UseCases:
-        return UseCases.Event
-
     @abc.abstractmethod
-    def apply(self, aggregate: Aggregate):
+    def apply(self, aggregate: _T):
         raise NotImplementedError
 
 
@@ -47,23 +42,19 @@ class AnyEvent(Event, abc.ABC):
     ...
 
 
-class EventListener(HasUseCase):
-    @staticmethod
-    def use_case() -> UseCases:
-        return UseCases.Event
-
+class EventListener():
     @abc.abstractmethod
     async def react(self, event: Event):
         raise NotImplementedError
 
 
-EventListenerType = typing.TypeVar('EventListenerType', bound=typing.Type[EventListener])
+EventListenerType = typing.TypeVar('EventListenerType', bound=typing.Callable[[Event], typing.Union[typing.Coroutine, typing.Any]])
 
 
 def reacts(*events: EventType):
     def wrap(cls):
         for react in events:
-            Dispatcher().register(react, cls)
+            get_dispatcher().register(react, cls)
         return cls
 
     return wrap
@@ -73,7 +64,7 @@ class ProcessManager(EventListener, abc.ABC):
     ...
 
 
-class RuntimeEventStore(EventListener, metaclass=Singleton):
+class RuntimeEventStore(EventListener):
     def __init__(self):
         super().__init__()
         self._store: typing.Dict[str, Event] = {}
@@ -98,10 +89,6 @@ class RuntimeEventStore(EventListener, metaclass=Singleton):
 
 
 class EventExecutor(Executor):
-    @staticmethod
-    def use_case() -> UseCases:
-        return UseCases.Event
-
     _registry: typing.Dict[EventType, typing.List[EventListenerType]] = dict()
 
     def register(self, dispatchable: EventType, executable: EventListenerType):
@@ -114,8 +101,7 @@ class EventExecutor(Executor):
                 self._registry.get(event_class, [])
                 + self._registry.get(AnyEvent, []))
 
-        for listener_class in all_listeners:
-            if listener_class not in self._deactivated:
-                listener = listener_class()
-                process = listener.react(dispatchable)
+        for listener in all_listeners:
+            if listener not in self._deactivated:
+                process = listener(dispatchable)
                 self._loop.push(process)

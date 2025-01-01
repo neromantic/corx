@@ -1,28 +1,8 @@
-import abc
 import asyncio
-import enum
 import typing
 
 
-__all__ = [
-    'Singleton',
-    'AsyncLoop',
-    'UseCases',
-    'HasUseCase',
-    'Executor',
-]
-
-
-class Singleton(type):
-    _instances = {}
-
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
-        return cls._instances[cls]
-
-
-class AsyncLoop(metaclass=Singleton):
+class __AsyncLoop():
     def __init__(self):
         self._loop = asyncio.get_event_loop()
         self._queue = asyncio.Queue()
@@ -75,34 +55,13 @@ class AsyncLoop(metaclass=Singleton):
                     raise exception
 
 
-class UseCases(enum.Enum):
-    Command = 1
-    Query = 2
-    Event = 3
 
+__async_loop = None
 
-class HasUseCase:
-    @staticmethod
-    @abc.abstractmethod
-    def use_case() -> UseCases:
-        raise NotImplementedError
+def get_async_loop() -> __AsyncLoop:
+    global __async_loop
 
+    if __async_loop is None:
+        __async_loop = __AsyncLoop()
 
-class Executor(HasUseCase, metaclass=Singleton):
-    _loop: AsyncLoop = AsyncLoop()
-
-    _deactivated = set()
-
-    @abc.abstractmethod
-    def register(self, dispatchable, executable):
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def execute(self, dispatchable):
-        raise NotImplementedError
-
-    def deactivate(self, executable):
-        self._deactivated.add(executable)
-
-    def activate(self, executable):
-        self._deactivated.remove(executable)
+    return __async_loop

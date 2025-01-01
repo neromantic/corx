@@ -2,60 +2,86 @@ import abc
 import dataclasses
 import typing
 
-from corx.base import HasUseCase, AsyncLoop, Executor, Singleton
-
 __all__ = [
     'Dispatchable',
-    'Dispatcher',
+    'Executor',
+    'get_dispatcher'
 ]
+
+from corx.loop import get_async_loop
 
 _T = typing.TypeVar('_T')
 _C = typing.TypeVar('_C')
 
 
+class Executor():
+    def __init__(self):
+        self._loop = get_async_loop()
+        self._deactivated = set()
+
+    @abc.abstractmethod
+    def register(self, dispatchable, executable):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def execute(self, dispatchable):
+        raise NotImplementedError
+
+    def deactivate(self, executable):
+        self._deactivated.add(executable)
+
+    def activate(self, executable):
+        self._deactivated.remove(executable)
+
 @dataclasses.dataclass
-class Dispatchable(HasUseCase, abc.ABC):
+class Dispatchable(abc.ABC):
 
     @classmethod
     def dispatch(cls, *args, **kwargs):
         instance = cls.__call__(*args, **kwargs)
-        Dispatcher().dispatch(instance)
+        get_dispatcher().dispatch(instance)
 
 
-class Dispatcher(metaclass=Singleton):
-    _executors: typing.List[Executor]
-    _loop: AsyncLoop
-
+class __Dispatcher():
     def __init__(self) -> None:
-        self._executors = []
-        self._loop = AsyncLoop()
+        self._executors = {}
+        self._loop = get_async_loop()
 
     def dispatch(self, *dispatchables: _T) -> None:
         for dispatchable in dispatchables:
-            executor = self._resolve(dispatchable)
+            executor = self._resolve(type(dispatchable))
             executor.execute(dispatchable)
         self._loop.process()
 
     def propagate_exceptions(self, status: bool):
         self._loop.propagate_exceptions(status)
 
-    def register_executors(self, *executors: Executor):
-        for executor in executors:
-            self._executors.append(executor)
+    def register_executor(self, dispatchable: typing.Type[Dispatchable], executor: Executor):
+        self._executors[dispatchable] = executor
 
-    def _resolve(self, instance: typing.Type[HasUseCase]) -> Executor:
-        for executor in self._executors:
-            if executor.use_case() == instance.use_case():
-                return executor
-
-        raise Exception(f'No executor for {instance.use_case()}.')
+    def _resolve(self, instance: typing.Type[Dispatchable]) -> Executor:
+        return self._executors[instance.__bases__[0]]
 
     def register(self, dispatchable: typing.Type[Dispatchable], executable: typing.Type[_C]) -> None:
         executor = self._resolve(dispatchable)
         executor.register(dispatchable, executable)
 
-    def deactivate(self, executable: typing.Type[HasUseCase]) -> None:
+    def deactivate(self, executable: typing.Any) -> None:
         self._resolve(executable).deactivate(executable)
 
-    def activate(self, executable: typing.Type[HasUseCase]) -> None:
+    def activate(self, executable: typing.Any) -> None:
         self._resolve(executable).activate(executable)
+
+__dispatcher = None
+
+def get_dispatcher() -> __Dispatcher:
+    global __dispatcher
+
+    if __dispatcher is None:
+        __dispatcher = __Dispatcher()
+
+    return __dispatcher
+
+
+def dispatch( *dispatchables: _T):
+    return get_dispatcher().dispatch(*dispatchables)
